@@ -1,0 +1,212 @@
+# Now that the FIFA World Cup is underway in Russia, billions of people around the globe will be watching the matches 
+# and trying to predict the tournament champion. But for those of you who aren’t international soccer fanatics, here’s a question: 
+# what if you could predict which teams will excel in the competition simply by examining some non-soccer related statistics?
+
+# Let’s take a closer look at some demographic data from the 32 nations who are competing in this year’s World Cup tournament.
+
+# Here’s how we’ll approach the problem: we’ll pick out five demographic statistics to examine for each of this year’s qualifying 
+# countries. We’ll order these nations in each category and compute the percentile ranking for each one. 
+# Then we’ll compare these numbers against similar demographic information of past World Cup champions.
+
+# In our analysis, we’ll identify a “sweet spot” in which former World Cup champions (since 1962) have positioned themselves in each 
+# statistical category. Then we’ll see which of our 32 entrants are the most similar demographically.
+
+#Let's first load in our packages.
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("dplyr")
+
+library(tidyverse)
+
+# Next, I navigated to the World Bank DataBank website [http://databank.worldbank.org] and downloaded data pertaining to:
+# 1. Population, total
+# 2. Population, male (% of total)
+# 3. International tourism, number of arrivals
+# 4. Cost of damage due to carbon dioxide emissions (% of GNI)
+# 5. Birth rate, crude (per 1,000 people)
+
+#... for the World Cup years from 1962 through 2014 AND 2016 (the most recent year available)
+
+# Here's a preview of what the data looked like after creating a pivot table in Excel:
+#####
+# I loaded all of the csv files into the R GUI...
+
+
+MalePop <- read.csv("MalePopClean.csv")
+Pov <- read.csv("PovertyClean.csv")
+Tour <- read.csv("TourismClean.csv")
+BRate <- read.csv("BirthRateClean.csv")
+Pollution <- read.csv("PollutionClean.csv")
+
+#Then I created a file of all of the World Cup qualifying teams throughout the tournament's history (79 of them), 
+#along with the years they qualified and loaded that file as well.
+
+WCupteams <- read.csv("WorldCupQualifiers.csv")
+
+#Then I merged the demographic datasets with the list of the World Cup qualifiers
+# while eliminating all of the other nations who never qualified
+WCUP <- merge(x=WCupteams, y=Pov, by = c("Country.Name", "year"), all.x = TRUE)
+WCUP <- merge(x=WCUP, y=MalePop, by = c("Country.Name", "year"), all.x = TRUE)
+WCUP <- merge(x=WCUP, y=Tour, by = c("Country.Name", "year"), all.x = TRUE)
+WCUP <- merge(x=WCUP, y=BRate, by = c("Country.Name", "year"), all.x = TRUE)
+WCUP <- merge(x=WCUP, y=Pollution, by = c("Country.Name", "year"), all.x = TRUE)
+
+#Next, I had to maually create a column [WCUP$RESULTt] which represented how each team fared in each year's tournament
+# I used Q for Qualifier, A for Absent (did not qualify that year)
+# C for Champion, R for Runner-up
+
+#Then I eliminated the rows which featured a country in a year when it did not qualify for the World Cup
+WCUPP <- subset(WCUP, RESULT != "A")
+
+# ONe more feature to be added: the number of teams which participated in each World Cup tournament. 
+Prior to 1980, there were 16 qualifying teams; 24 teams from 1982-1994; and 32 teams from 1998-present.
+
+WCALLQ$NoTeams <- ifelse(WCALLQ$year < 1979, 16, (ifelse(WCALLQ$year > 1995, 32,24)))
+
+# Then I subseted each year from the dataset
+
+WCup16 <- subset(WCUPP, year == 1962)
+WCup16 <- subset(WCUPP, year == 1966)
+WCup16 <- subset(WCUPP, year == 1970)
+WCup16 <- subset(WCUPP, year == 1974)....
+....WCup16 <- subset(WCUPP, year == 2014)
+WCup16 <- subset(WCUPP, year == 2016)
+
+## NOTE: Since the year 2016 is the most current for which demographic data is available,
+## I used those stats for the 2018 World Cup tournament.
+
+#Now I have a dataset for each World Cup year which allows me to compare all qualifying teams with each demographic feature.
+
+## Time for the sorting!
+# First, I will sort each dataset by one feature and give each team a rank
+
+WCup62$RankP <- rank(order(WCup62$Population))
+
+# Then I'll assign these rankings a percentile rank
+
+WCup62$QRankP <- (WCup62$NoTeams - WCup62$RankP + 1)/ WCA70$NoTeams
+
+# I'll do this for each feature...
+WCup62$RankMP <- rank(order(WCup62$MalePct))
+WCup62$QRankMP <- (WCup62$NoTeams - WCup62$RankMP + 1)/ WCup62$NoTeams
+WCup62$RankT <- rank(order(WCup62$Tourists))
+WCup62$QRankT <- (WCup62$NoTeams - WCup62$RankT + 1)/ WCup62$NoTeams
+WCup62$RankB <- rank(order(WCup62$BirthRate))
+WCup62$QRankB <- (WCup62$NoTeams - WCup62$RankB + 1)/ WCup62$NoTeams
+WCup62$RankX <- rank(order(WCup62$PolIndex))
+WCup62$QRankX <- (WCup62$NoTeams - WCup62$RankX + 1)/ WCup62$NoTeams
+
+# and do this for each year's dataset...
+WCup66$RankMP <- rank(order(WCup66$MalePct))
+WCup66$QRankMP <- (WCup66$NoTeams - WCup66$RankMP + 1)/ WCup66$NoTeams
+WCup70$RankMP <- rank(order(WCup70$MalePct))
+WCup70$QRankMP <- (WCup70$NoTeams - WCup70$RankMP + 1)/ WCup70$NoTeams....
+WCup16$RankMP <- rank(order(WCup16$MalePct))
+WCup16$QRankMP <- (WCup16$NoTeams - WCup16$RankMP + 1)/ WCup16$NoTeams
+
+# Now, it's time to recombine the yearly dataset into one big dataset...
+
+WCupData <- rbind(WCup62,WCup66,WCup70,WCup74,WCup78,WCup82,WCup86,WCup90,WCup94,WCup98,WCup02,WCup06,WCup10,WCup14,WCup16)
+
+#The next step is to compare this new percentile-ranked-by-feature dataset with 
+# a subset of this dataset made up of ONLY the World Cup champions
+
+WCupChamps <- subset(WCupData, RESULT == "C")
+
+# One more column: one which concatenated the team name and the year in which they qualified
+
+WCupChamps$teamyear <- paste(WCupChamps$Country.Name, WCupChamps$year)
+
+# To identify the "sweet spot" (i.e. quantile range) of the World Cup champions for each feature, I plotted them on a scatter plot
+
+# For population
+ggplot() + geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankP), color = "navyblue") +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankP), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("World Cup Champions") + ylab("Percentile Rank: Population") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankP), ymax = max(WCupChamps$QRankP), alpha = .2)
+
+# This gives us the "sweet spot" for this feature: the maximum and minimum percentile rankings for each World Cup champion in their respective years.
+# After repeating this for the other four demographic features...
+
+# For male population
+ggplot() + geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankMP), color = "navyblue") +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankMP), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("World Cup Champions") + ylab("Percentile Rank: % Male Population") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankMP), ymax = max(WCupChamps$QRankMP), alpha = .2)
+
+# For pollution
+ggplot() + geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankX), color = "navyblue") +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankX), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("World Cup Champions") + ylab("Percentile Rank: Pollution Index") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankX), ymax = max(WCupChamps$QRankX), alpha = .2)
+
+# For tourism
+ggplot() + geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankT), color = "navyblue") +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankT), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("World Cup Champions") + ylab("Percentile Rank: Tourism") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankT), ymax = max(WCupChamps$QRankT), alpha = .2)
+
+# For birth rate
+ggplot() + geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankB), color = "navyblue") +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankB), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("World Cup Champions") + ylab("Percentile Rank: Birth Rate") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankB), ymax = max(WCupChamps$QRankB), alpha = .2)
+
+# it was determined that the first two years of the dataset, 1962 and 1966, were outliers.
+# So those years were eliminated from the datasets
+
+WCupData <- WCupData[!(WCupData$year==1962 & WCupData$year==1966),]
+WCupChamps <- WCupChamps[!(WCupChamps$year==1962 & WCupChamps$year==1966),]
+
+# Now, it's time to see where this year's World Cup qualifiers fared in relation to the "sweet spot" for each feature
+# We'll plot the original "sweet spot" against the points of this year's qualifiers on the same scatter plot
+
+# For population
+ggplot() + geom_point(data=WCup16, aes(x=Country.Name, y=QRankP), color = "red") +
+geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankP), color = "navyblue") +
+geom_text(data=WCup16, aes(label = WCup16$Country.Name, x=WCup16$Country.Name, y=WCup16$QRankP), size=5, color="red", nudge_y = -.01) +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankP), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("2018 World Cup Qualifying Nations") + ylab("Percentile Rank: Population") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankP), ymax = max(WCupChamps$QRankP), alpha = .2) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# When looking at the plot, we can eliminate the teams which fall outside of the "sweet spot."
+# Repeating the process for each feature...
+
+# For male population
+ggplot() + geom_point(data=WCup16, aes(x=Country.Name, y=QRankMP), color = "red") +
+geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankMP), color = "navyblue") +
+geom_text(data=WCup16, aes(label = WCup16$Country.Name, x=WCup16$Country.Name, y=WCup16$QRankMP), size=5, color="red", nudge_y = -.01) +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankMP), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("2018 World Cup Qualifying Nations") + ylab("Percentile Rank: % Male Population") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankMP), ymax = max(WCupChamps$QRankMP), alpha = .2) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# For pollution
+ggplot() + geom_point(data=WCup16, aes(x=Country.Name, y=QRankX), color = "red") +
+geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankX), color = "navyblue") +
+geom_text(data=WCup16, aes(label = WCup16$Country.Name, x=WCup16$Country.Name, y=WCup16$QRankX), size=5, color="red", nudge_y = -.01) +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankX), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("2018 World Cup Qualifying Nations") + ylab("Percentile Rank: Pollution Index") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankX), ymax = max(WCupChamps$QRankX), alpha = .2) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# For tourism
+ggplot() + geom_point(data=WCup16, aes(x=Country.Name, y=QRankT), color = "red") +
+geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankT), color = "navyblue") +
+geom_text(data=WCup16, aes(label = WCup16$Country.Name, x=WCup16$Country.Name, y=WCup16$QRankT), size=5, color="red", nudge_y = -.01) +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankT), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("2018 World Cup Qualifying Nations") + ylab("Percentile Rank: Tourism") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankT), ymax = max(WCupChamps$QRankT), alpha = .2) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# For birth rate
+ggplot() + geom_point(data=WCup16, aes(x=Country.Name, y=QRankB), color = "red") +
+geom_point(data=WCupChamps, aes(x=Country.Name, y=QRankB), color = "navyblue") +
+geom_text(data=WCup16, aes(label = WCup16$Country.Name, x=WCup16$Country.Name, y=WCup16$QRankB), size=5, color="red", nudge_y = -.01) +
+geom_text(data=WCupChamps, aes(label = WCupChamps$teamyear, x=WCupChamps$Country.Name, y=WCupChamps$QRankB), size=5, color="navyblue", nudge_x = 1.5) +
+xlab("2018 World Cup Qualifying Nations") + ylab("Percentile Rank: Birth Rate") +
+annotate("rect", xmin = "Argentina", xmax = "Uruguay", ymin = min(WCupChamps$QRankB), ymax = max(WCupChamps$QRankB), alpha = .2) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# ... the only four team remaining are: Germany, Spain, Poland, and Mexico.
